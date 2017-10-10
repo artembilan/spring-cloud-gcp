@@ -21,24 +21,24 @@ import java.util.Collections;
 
 import com.google.api.gax.core.CredentialsProvider;
 import com.google.auth.oauth2.GoogleCredentials;
+import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.bind.RelaxedPropertyResolver;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cloud.gcp.core.GcpProperties;
 import org.springframework.cloud.gcp.core.GcpScope;
 import org.springframework.cloud.gcp.storage.GcpStorageProperties;
 import org.springframework.cloud.gcp.storage.GoogleStorageProtocolResolver;
-import org.springframework.cloud.gcp.storage.GoogleStorageProtocolResolverContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.PropertyResolver;
 
 /**
- * An auto-configuration for Google {@link GoogleStorageProtocolResolverContext} bean
- * definition. Also it {@link Import} a {@link GoogleStorageProtocolResolver} to register
- * it with the {@code DefaultResourceLoader}.
+ * An auto-configuration for Google {@link Storage} and {@link GoogleStorageProtocolResolver} beans
+ * to register it with the {@code DefaultResourceLoader}.
  *
  * @author Vinicius Carvalho
  * @author Artem Bilan
@@ -46,26 +46,28 @@ import org.springframework.context.annotation.Import;
  * @see GoogleStorageProtocolResolver
  */
 @Configuration
-@ConditionalOnClass(GoogleStorageProtocolResolverContext.class)
-@EnableConfigurationProperties({GcpProperties.class, GcpStorageProperties.class})
-@Import(GoogleStorageProtocolResolver.class)
+@EnableConfigurationProperties({ GcpProperties.class, GcpStorageProperties.class })
 public class StorageAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public static GoogleStorageProtocolResolverContext googleStorageProtocolResolverContext(
-			CredentialsProvider credentialsProvider,
+	public static Storage googleStorage(CredentialsProvider credentialsProvider,
 			GcpStorageProperties gcpStorageProperties) throws IOException {
-		return new GoogleStorageProtocolResolverContext(
-				StorageOptions.newBuilder()
+		return StorageOptions.newBuilder()
 				.setCredentials(gcpStorageProperties.getCredentialsLocation() != null
 						? GoogleCredentials.fromStream(
 								gcpStorageProperties.getCredentialsLocation().getInputStream())
-						.createScoped(Collections.singletonList(
-								GcpScope.STORAGE_READ_WRITE.getUrl()))
+								.createScoped(Collections.singletonList(
+										GcpScope.STORAGE_READ_WRITE.getUrl()))
 						: credentialsProvider.getCredentials())
 				.build()
-						.getService(),
-				gcpStorageProperties.isAutoCreateFiles());
+				.getService();
 	}
+
+	@Bean
+	public static GoogleStorageProtocolResolver googleStorageProtocolResolver(Environment environment) {
+		PropertyResolver propertyResolver = new RelaxedPropertyResolver(environment, "spring.cloud.gcp.storage.");
+		return new GoogleStorageProtocolResolver(propertyResolver.getProperty("auto-create-files", Boolean.class));
+	}
+
 }

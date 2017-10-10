@@ -42,7 +42,9 @@ import static org.junit.Assert.assertEquals;
 /**
  * @author Artem Bilan
  */
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(
+		webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+properties = "spring.cloud.gcp.storage.autoCreateFiles=false")
 @RunWith(SpringRunner.class)
 public class GoogleStorageAutoConfigurationTests {
 
@@ -69,7 +71,7 @@ public class GoogleStorageAutoConfigurationTests {
 		}
 
 		@Bean
-		public static GoogleStorageProtocolResolverContext mockGoogleStorageProtocolResolverContext()
+		public static Storage mockGoogleStorage()
 				throws Exception {
 			Storage storage = Mockito.mock(Storage.class);
 			BlobId validBlob = BlobId.of("test-spring", "images/spring.png");
@@ -77,7 +79,7 @@ public class GoogleStorageAutoConfigurationTests {
 			Mockito.when(mockedBlob.exists()).thenReturn(true);
 			Mockito.when(mockedBlob.getSize()).thenReturn(4096L);
 			Mockito.when(storage.get(Mockito.eq(validBlob))).thenReturn(mockedBlob);
-			return new GoogleStorageProtocolResolverContext(storage, true);
+			return storage;
 		}
 
 	}

@@ -16,6 +16,8 @@
 
 package org.springframework.cloud.gcp.storage;
 
+import com.google.cloud.storage.Storage;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -41,11 +43,18 @@ public class GoogleStorageProtocolResolver
 
 	private static final String PROTOCOL = "gs://";
 
+	private final boolean createBlobIfNotExists;
+
 	private ConfigurableListableBeanFactory beanFactory;
 
-	private volatile GoogleStorageProtocolResolverContext context;
+	private volatile Storage storage;
 
-	GoogleStorageProtocolResolver() {
+	public GoogleStorageProtocolResolver() {
+		this(true);
+	}
+
+	public GoogleStorageProtocolResolver(boolean createBlobIfNotExists) {
+		this.createBlobIfNotExists = createBlobIfNotExists;
 	}
 
 	@Override
@@ -68,12 +77,10 @@ public class GoogleStorageProtocolResolver
 	@Override
 	public Resource resolve(String location, ResourceLoader resourceLoader) {
 		if (location.startsWith(PROTOCOL)) {
-			if (this.context == null) {
-				this.context = this.beanFactory
-						.getBean(GoogleStorageProtocolResolverContext.class);
+			if (this.storage == null) {
+				this.storage = this.beanFactory.getBean(Storage.class);
 			}
-			return new GoogleStorageResource(this.context.getStorage(), location,
-					this.context.isAutoCreateFiles());
+			return new GoogleStorageResource(this.storage, location, this.createBlobIfNotExists);
 		}
 		return null;
 	}

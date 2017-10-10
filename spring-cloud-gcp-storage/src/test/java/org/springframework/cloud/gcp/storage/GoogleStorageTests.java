@@ -24,6 +24,7 @@ import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
+
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -162,8 +163,7 @@ public class GoogleStorageTests {
 	static class StorageApplication {
 
 		@Bean
-		public static GoogleStorageProtocolResolverContext mockGoogleStorageProtocolResolverContext()
-				throws Exception {
+		public static Storage mockGoogleStorage() {
 			Storage storage = Mockito.mock(Storage.class);
 			BlobId validBlob = BlobId.of("test-spring", "images/spring.png");
 			Blob mockedBlob = Mockito.mock(Blob.class);
@@ -172,7 +172,7 @@ public class GoogleStorageTests {
 			Mockito.when(mockedBlob.getSize()).thenReturn(4096L);
 			Mockito.when(storage.get(Mockito.eq(validBlob))).thenReturn(mockedBlob);
 			Mockito.when(mockedBlob.writer()).thenReturn(writeChannel);
-			return new GoogleStorageProtocolResolverContext(storage, true);
+			return storage;
 		}
 
 	}
